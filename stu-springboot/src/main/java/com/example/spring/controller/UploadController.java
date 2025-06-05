@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.spring.dto.UploadResultDTO;
 
 import lombok.extern.log4j.Log4j2;
+import net.coobird.thumbnailator.Thumbnailator;
 
 @RestController
 @Log4j2
@@ -61,6 +62,13 @@ public class UploadController {
 			
 			try {
 				uploadFile.transferTo(savePath);
+				
+				String thumbnailSaveName = uploadPath + File.separator + folderPath + File.separator + "s_" + uuid + "_" + fileName;
+				
+				File thumbnailFile = new File(thumbnailSaveName);
+				
+				Thumbnailator.createThumbnail(savePath.toFile(), thumbnailFile, 100, 100);
+				
 				resultDtoList.add(new UploadResultDTO(fileName, uuid, folderPath));
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -108,5 +116,35 @@ public class UploadController {
 		
 		return result;
 	}
+	
+	@PostMapping("/removeFile")
+	public ResponseEntity<Boolean> removeFile(@RequestParam("fileName") String fileName) {
+		String srcFileName = null;
+		
+		try {
+			srcFileName = URLDecoder.decode(fileName, "UTF-8");
+			File file = new File(uploadPath + File.separator + srcFileName);
+			
+			boolean result = file.delete();
+			
+			File thumbnail = new File(file.getParent(), "s_" + file.getName());
+			result = thumbnail.delete();
+			
+			return new ResponseEntity<>(result, HttpStatus.OK);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<>(false, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
 }
+
+
+
+
+
+
+
+
+
 
